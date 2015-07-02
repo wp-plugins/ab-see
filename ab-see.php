@@ -195,6 +195,10 @@ class WP_AB_See {
 			), ARRAY_A
 		);
 
+		if ( $result == null ) {
+			return array();
+		}
+
 		$result[ 'description' ] = stripslashes( $result[ 'description' ] );
 		$result[ 'option_a' ] = stripslashes( $result[ 'option_a' ] );
 		$result[ 'option_b' ] = stripslashes( $result[ 'option_b' ] );
@@ -250,6 +254,45 @@ class WP_AB_See {
 				'id' => $test_id,
 			)
 		);
+	}
+
+	public function delete_test( $test_id ) {
+		global $wpdb;
+
+		$test = $this->get_test( $test_id );
+
+		if ( FALSE == $test ) {
+			return FALSE;
+		}
+
+		if ( ! isset( $_GET[ 'nonce' ] ) ) {
+?>
+<p style="background-color: #f0f8ff; border: 2px solid black; text-align: center; padding: 8px;">
+  Are you sure you want to delete the test <b><?php echo( $test_id ); ?></b>?
+  (<a href="admin.php?page=<?php echo( self::DOMAIN . 'admin' ); ?>&amp;delete=<?php echo( $test[ 'id' ] ); ?>&amp;nonce=<?php echo( wp_create_nonce( 'delete_' . $test_id ) ); ?>">Yes, really delete the test!</a>)
+</p>
+<?php
+		} else if ( wp_verify_nonce( $_GET[ 'nonce' ], 'delete_' . $test_id ) ) {
+			$wpdb->delete(
+				$this->table_name,
+				array(
+					'id' => $test_id,
+				)
+			);
+
+			$wpdb->delete(
+				$this->table_tracking_name,
+				array(
+					'id' => $test_id,
+				)
+			);
+?>
+<p style="background-color: #f0f8ff; border: 2px solid black; text-align: center; padding: 8px;">
+  Test deleted.
+</p>
+<?php
+		}
+
 	}
 
 	public function show_edit_page( $id ) {
@@ -320,7 +363,10 @@ class WP_AB_See {
 ?>
 <table width="100%">
   <tr align="center">
-    <th>ID</th><th>Description</th><th>Created</th><th>Edit</th><th>Enabled</th>
+    <th>ID</th><th>Description</th><th>Created</th><th>Edit</th><th>Enabled</th><?php
+    	if ( ! $enabled ) {
+    		echo( '<th>Delete</th>' );
+    	}?>
   </tr>
 <?php
 		foreach ( $test_obj as $test ) {
@@ -334,6 +380,13 @@ class WP_AB_See {
     <td><?php echo( $test[ 'created' ] ); ?></td>
     <td><a href="admin.php?page=<?php echo( self::DOMAIN . 'admin' ); ?>&amp;edit_id=<?php echo( $test[ 'id' ] ); ?>">edit</a></td>
     <td><a href="admin.php?page=<?php echo( self::DOMAIN . 'admin' ); ?>&amp;toggle=<?php echo( $test[ 'id' ] ); ?>"><?php echo( $test[ 'enabled' ] ? 'On' : 'Off' ); ?></a></td>
+<?php
+			if ( ! $enabled ) {
+?>
+	<td><a href="admin.php?page=<?php echo( self::DOMAIN . 'admin' ); ?>&amp;delete=<?php echo( $test[ 'id' ] ); ?>">Delete Test</a></td>
+<?php
+			}
+?>
   </tr>
 <?php
 		}
@@ -407,6 +460,8 @@ class WP_AB_See {
 			$this->show_edit_page( $_GET[ 'edit_id' ] );
 		} else if ( isset( $_GET[ 'view_id' ] ) ) {
 			$this->show_view_page( $_GET[ 'view_id' ] );
+		} else if ( isset( $_GET[ 'delete' ] ) ) {
+			$this->delete_test( $_GET[ 'delete' ] );
 		}
 
 		$test_obj = $this->get_all_tests();

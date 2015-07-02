@@ -54,6 +54,9 @@ http://scenttrunk.com?group_override=2 will force tests from the second group.
 
 == Changelog ==
 
+= 1.01 =
+* Add a delete test option for inactive tests. This will delete the test along with the old test data.
+
 = 1.0 =
 * First release!
 
